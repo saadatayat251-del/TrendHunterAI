@@ -62,20 +62,39 @@ def agent_strategist(trend_data):
 # ==========================================
 # 5. SambaNova (فیلتر زباله)
 # ==========================================
+# ==========================================
+# 5. SambaNova (فیلتر زباله) - آپدیت شده با مدل‌های جدید
+# ==========================================
 def agent_sambanova_filter(raw_data):
     try:
         api_key = sambanova_keys.get_next_key()
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-        payload = {
-            "model": "Meta-Llama-3-8B-Instruct",
-            "messages": [{"role": "user", "content": f"فقط اطلاعات مفید را نگه دار و خلاصه کن: {raw_data}"}]
-        }
-        response = requests.post("https://api.sambanova.ai/v1/chat/completions", headers=headers, json=payload, timeout=20)
         
-        if response.status_code == 200:
-            data = response.json()
-            if 'choices' in data:
-                return data['choices'][0]['message']['content']
-        return f"❌ خطای سامبانووا: بررسی کنید کلید API درست باشد. ارور: {response.status_code}"
+        # لیست مدل‌های جدید، سریع و کاملاً رایگان سامبانووا
+        models = [
+            "Meta-Llama-3.1-8B-Instruct",   # فوق‌سریع برای فیلتر کردن
+            "Meta-Llama-3.1-70B-Instruct",  # مدل قدرتمندتر
+            "Meta-Llama-3.2-3B-Instruct"    # جدیدترین مدل سبک
+        ]
+        
+        for model in models:
+            payload = {
+                "model": model,
+                "messages": [{"role": "user", "content": f"این دیتای خام شبکه های اجتماعی است. فقط اطلاعات مفید را نگه دار و نویزها و تبلیغات فیک را حذف کن. خلاصه کن: {raw_data}"}]
+            }
+            
+            response = requests.post("https://api.sambanova.ai/v1/chat/completions", headers=headers, json=payload, timeout=20)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if 'choices' in data and len(data['choices']) > 0:
+                    return data['choices'][0]['message']['content']
+            else:
+                # اگر این مدل 404 داد، پرینت می‌گیریم که در لاگ رندر ببینیم و می‌رویم سراغ مدل بعدی
+                print(f"SambaNova Model {model} failed with status {response.status_code}")
+                continue
+                
+        return f"❌ خطای سامبانووا: تمام مدل‌های رایگان تست شدند اما جواب ندادند. آخرین ارور: {response.status_code}"
     except Exception as e:
         return f"❌ خطای اتصال سامبانووا: {str(e)}"
+
