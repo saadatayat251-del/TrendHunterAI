@@ -47,8 +47,8 @@ def call_openrouter(prompt, models_list, is_grok=False):
 def agent_grok_analyze(data):
     # لیست مدل‌های کاملاً رایگان در OpenRouter
     models = [
-        "google/gemini-2.0-flash-exp:free",          # شاهکار جدید گوگل (رایگان و سریع)
-        "meta-llama/llama-3.2-11b-vision-instruct:free", # مدل جدید متا
+        "moonshotai/kimi-k2-instruct-0905",          # شاهکار جدید گوگل (رایگان و سریع)
+        "llama-3.3-70b-versatile", # مدل جدید متا
         "huggingfaceh4/zephyr-7b-beta:free"          # مدل بسیار سبک و سریع
     ]
     
@@ -109,5 +109,6 @@ def agent_sambanova_filter(raw_data):
         return f"❌ خطای سامبانووا: تمام مدل‌های رایگان تست شدند اما جواب ندادند. آخرین ارور: {response.status_code}"
     except Exception as e:
         return f"❌ خطای اتصال سامبانووا: {str(e)}"
+
 
 
