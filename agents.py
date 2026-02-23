@@ -41,9 +41,21 @@ def call_openrouter(prompt, models_list, is_grok=False):
 # ==========================================
 # 3. Grok (تحلیل وایرال)
 # ==========================================
+# ==========================================
+# 3. Grok (تحلیل وایرال) - آپدیت شده با مدل‌های 100% رایگان
+# ==========================================
 def agent_grok_analyze(data):
-    models = ["moonshotai/kimi-k2-instruct-0905", "llama-3.3-70b-versatile"]
-    prompt = f"تو متخصص شبکه های اجتماعی هستی. این دیتای خام را بررسی کن و بگو آیا در توییتر و تیک تاک در حال وایرال شدن است؟ دیتا: {data}"
+    # لیست مدل‌های کاملاً رایگان در OpenRouter
+    models = [
+        "google/gemini-2.0-flash-exp:free",          # شاهکار جدید گوگل (رایگان و سریع)
+        "meta-llama/llama-3.2-11b-vision-instruct:free", # مدل جدید متا
+        "huggingfaceh4/zephyr-7b-beta:free"          # مدل بسیار سبک و سریع
+    ]
+    
+    prompt = f"تو متخصص شبکه های اجتماعی هستی. این دیتای خام را بررسی کن و فقط بگو آیا در توییتر و تیک تاک پتانسیل وایرال شدن دارد یا نه؟ (کوتاه جواب بده). دیتا: {data}"
+    
+    # اینجا از تابع call_openrouter استفاده می‌کنیم که قبلاً نوشتیم
+    # نکته: مطمئن شو که GROK_KEYS تو در رندر، همان کلیدهای OpenRouter باشند
     return call_openrouter(prompt, models, is_grok=True)
 
 # ==========================================
@@ -97,4 +109,5 @@ def agent_sambanova_filter(raw_data):
         return f"❌ خطای سامبانووا: تمام مدل‌های رایگان تست شدند اما جواب ندادند. آخرین ارور: {response.status_code}"
     except Exception as e:
         return f"❌ خطای اتصال سامبانووا: {str(e)}"
+
 
