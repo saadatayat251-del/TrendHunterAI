@@ -19,4 +19,6 @@ class KeyManager:
 # ساخت منیجرها برای هر هوش مصنوعی
 gemini_keys = KeyManager("GEMINI_KEYS")
 openrouter_keys = KeyManager("OPENROUTER_KEYS")
+
 sambanova_keys = KeyManager("SAMBANOVA_KEYS")
+grok_keys = KeyManager("GROK_KEYS")
