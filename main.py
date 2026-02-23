@@ -14,34 +14,39 @@ class TrendRequest(BaseModel):
     row_index: int
 
 def run_multi_agent_pipeline(domain: str, keyword: str):
-    # 0. اعلام بیداری به تلگرام
     send_telegram_message(f"🔍 <b>شکارچی بیدار شد!</b>\n🎯 هدف: {keyword}\n📂 حوزه: {domain}\n⏳ در حال تحلیل شبکه‌های جهانی...")
     
-    step = "شروع پردازش"
     try:
-        step = "گسترش کلمات (Gemini)"
+        # مرحله ۱
         expanded_kws = agent_gemini_expand(domain, keyword)
+        if "❌" in expanded_kws: raise Exception(f"گسترش کلمات متوقف شد: {expanded_kws}")
         
-        step = "استخراج دیتا (HuggingFace Proxies)"
+        # مرحله ۲
         raw_data = scrape_social_media(expanded_kws)
+        if "Error" in raw_data or "خطا" in raw_data: raise Exception(f"سپر هاگینگ‌فیس دیتایی پیدا نکرد: {raw_data}")
         
-        step = "فیلتر زباله (SambaNova)"
+        # مرحله ۳
         clean_data = agent_sambanova_filter(raw_data)
+        if "❌" in clean_data: raise Exception(f"فیلتر سامبانووا متوقف شد: {clean_data}")
         
-        step = "تحلیل وایرال (Grok)"
+        # مرحله ۴
         grok_analysis = agent_grok_analyze(clean_data)
+        if "❌" in grok_analysis: raise Exception(f"تحلیل گروک متوقف شد: {grok_analysis}")
         
-        step = "استراتژی نهایی (OpenRouter)"
+        # مرحله ۵
         final_prompt = f"Cleaned Data: {clean_data}\n\nGrok Viral Analysis: {grok_analysis}\n\nTranslate and analyze for Persian audience."
         final_report = agent_strategist(final_prompt)
+        if "❌" in final_report: raise Exception(f"استراتژیست متوقف شد: {final_report}")
         
-        step = "ارسال گزارش نهایی"
+        # مرحله ۶
         message = f"🔥 <b>گزارش نهایی ترند: {keyword}</b> 🔥\n\n{final_report}"
         send_telegram_message(message)
         
     except Exception as e:
-        # حالا دقیقا می‌فهمیم کدام هوش مصنوعی خرابکاری کرده!
-        send_telegram_message(f"❌ <b>خطا در مرحله: {step}</b>\nدلیل خطا: {str(e)}\n\n(این یعنی کلید API مربوط به این مرحله اشتباه، منقضی یا مسدود شده است)")
+        # الان دقیقاً می‌فهمیم کدام مرحله مشکل دارد و داستان‌سرایی نمی‌شود!
+        send_telegram_message(f"⚠️ <b>عملیات متوقف شد!</b>\n\n{str(e)}\n\n(لطفاً کلیدهای مربوط به این بخش را در سایت رندر چک کنید)")
+        
+  
 
 @app.post("/api/start-hunt")
 async def start_hunt(req: TrendRequest, background_tasks: BackgroundTasks):
@@ -58,3 +63,4 @@ def ping():
 if __name__ == "__main__":
 
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
