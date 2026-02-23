@@ -45,13 +45,24 @@ def call_openrouter(prompt, models_list):
 # ==========================================
 # 3. Grok Agent (Social Media Expert)
 # ==========================================
+# در فایل agents.py این تابع را جایگزین قبلی کن
 def agent_grok_analyze(data):
-    models = [
-        "moonshotai/kimi-k2-instruct-0905",
-        "llama-3.3-70b-versatile" # Added fallback as requested
-    ]
+    models = ["moonshotai/kimi-k2-instruct-0905", "llama-3.3-70b-versatile"]
     prompt = f"تو متخصص شبکه های اجتماعی هستی. این دیتای خام را بررسی کن و بگو آیا این موضوع در توییتر و تیک تاک در حال وایرال شدن است یا نه؟ دیتا: {data}"
-    return call_openrouter(prompt, models)
+    
+    # استفاده از کلیدهای اختصاصی گروک
+    api_key = grok_keys.get_next_key()
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    
+    for model in models:
+        payload = {"model": model, "messages": [{"role": "user", "content": prompt}]}
+        try:
+            response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=20)
+            if response.status_code == 200:
+                return response.json()['choices'][0]['message']['content']
+        except Exception:
+            continue
+    return "خطا در بررسی وایرال شدن."
 
 # ==========================================
 # 4. Strategist Agent (OpenRouter Top Tier)
@@ -84,3 +95,4 @@ def agent_sambanova_filter(raw_data):
     response = requests.post("https://api.sambanova.ai/v1/chat/completions", headers=headers, json=payload)
 
     return response.json()['choices'][0]['message']['content']
+
