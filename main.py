@@ -17,29 +17,31 @@ def run_multi_agent_pipeline(domain: str, keyword: str):
     # 0. اعلام بیداری به تلگرام
     send_telegram_message(f"🔍 <b>شکارچی بیدار شد!</b>\n🎯 هدف: {keyword}\n📂 حوزه: {domain}\n⏳ در حال تحلیل شبکه‌های جهانی...")
     
+    step = "شروع پردازش"
     try:
-        # 1. Gemini: Expand Keywords
+        step = "گسترش کلمات (Gemini)"
         expanded_kws = agent_gemini_expand(domain, keyword)
         
-        # 2. HuggingFace Proxies: Scrape Data
+        step = "استخراج دیتا (HuggingFace Proxies)"
         raw_data = scrape_social_media(expanded_kws)
         
-        # 3. SambaNova: Filter Garbage
+        step = "فیلتر زباله (SambaNova)"
         clean_data = agent_sambanova_filter(raw_data)
         
-        # 4. Grok: Real-time Viral Check
+        step = "تحلیل وایرال (Grok)"
         grok_analysis = agent_grok_analyze(clean_data)
         
-        # 5. OpenRouter (Strategist): Final Content Strategy
+        step = "استراتژی نهایی (OpenRouter)"
         final_prompt = f"Cleaned Data: {clean_data}\n\nGrok Viral Analysis: {grok_analysis}\n\nTranslate and analyze for Persian audience."
         final_report = agent_strategist(final_prompt)
         
-        # 6. Send Final Result to Telegram
+        step = "ارسال گزارش نهایی"
         message = f"🔥 <b>گزارش نهایی ترند: {keyword}</b> 🔥\n\n{final_report}"
         send_telegram_message(message)
         
     except Exception as e:
-        send_telegram_message(f"❌ <b>خطا در پردازش:</b>\n{str(e)}")
+        # حالا دقیقا می‌فهمیم کدام هوش مصنوعی خرابکاری کرده!
+        send_telegram_message(f"❌ <b>خطا در مرحله: {step}</b>\nدلیل خطا: {str(e)}\n\n(این یعنی کلید API مربوط به این مرحله اشتباه، منقضی یا مسدود شده است)")
 
 @app.post("/api/start-hunt")
 async def start_hunt(req: TrendRequest, background_tasks: BackgroundTasks):
@@ -54,4 +56,5 @@ def ping():
 
 # این بخش برای تست روی سیستم خودت است (روی رندر نادیده گرفته می‌شود)
 if __name__ == "__main__":
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
