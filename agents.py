@@ -68,17 +68,17 @@ def agent_gemini_expand(domain, keyword):
 # 3. Grok Agent (با اصلاح نام مدل‌ها برای OpenRouter)
 # ==========================================
 def agent_grok_analyze(data):
-    # من نام‌ها را به فرمت استاندارد OpenRouter اصلاح کردم تا 404 ندهد
     models = [
-        "moonshotai/moonshot-v1-8k",           # نام استاندارد Moonshot در OpenRouter
-        "meta-llama/llama-3.3-70b-instruct",   # نام استاندارد Llama 3.3 در OpenRouter (بجای versatile)
-        "google/gemini-2.0-flash-exp:free"     # یک بکاپ رایگان و قوی برای اطمینان
+        "moonshotai/moonshot-v1-8k",
+        "meta-llama/llama-3.3-70b-instruct",
+        "google/gemini-2.0-flash-exp:free"
     ]
     
     prompt = f"تو متخصص شبکه های اجتماعی هستی. این دیتای خام را بررسی کن و بگو آیا این موضوع در توییتر و تیک تاک در حال وایرال شدن است یا نه؟ دیتا: {data}"
     
-    # استفاده از کلیدهای GROK_KEYS
-    return run_openrouter_request(prompt, models, grok_keys, agent_name="Grok")
+    # ❌ خطای قبلی اینجا بود: grok_keys
+    # ✅ کد صحیح: openrouter_keys
+    return run_openrouter_request(prompt, models, openrouter_keys, agent_name="Grok_via_OpenRouter")
 
 # ==========================================
 # 4. Strategist Agent (مدل‌های درخواستی شما)
@@ -121,3 +121,4 @@ def agent_sambanova_filter(raw_data):
             continue
             
     return "خطا: تمام مدل‌های سامبانووا پاسخ ندادند."
+
