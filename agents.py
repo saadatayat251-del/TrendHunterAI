@@ -1,6 +1,10 @@
 import requests
 import urllib.parse
+from datetime import datetime
 from key_rotator import openrouter_keys, sambanova_keys
+
+# دریافت سال میلادی جاری (مثلا 2026)
+current_year = datetime.now().year
 
 # ==========================================
 # تابع ارسال درخواست به OpenRouter
@@ -12,11 +16,10 @@ def run_openrouter_request(prompt, models_list, key_manager, agent_name):
         "Content-Type": "application/json"
     }
     
-    # مدل‌های قدرتمند و رایگان
     safe_models = ["google/gemini-2.0-flash-lite-preview-02-05:free", "meta-llama/llama-3.3-70b-instruct:free", "openrouter/free"]
     
     for model in safe_models:
-        payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.3}
+        payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.4}
         try:
             response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=45)
             if response.status_code == 200:
@@ -28,79 +31,89 @@ def run_openrouter_request(prompt, models_list, key_manager, agent_name):
     return "Error: No Response"
 
 # ==========================================
-# 1. مترجم و سازنده کوئری (هوش اصلی سیستم)
+# 1. تبدیل‌گر هوشمند (ساخت کوئری وایرال)
 # ==========================================
 def agent_gemini_expand(domain, keyword):
-    # این تابع کلمه فارسی شما را می‌گیرد و بهترین عبارت انگلیسی برای سرچ در تیک‌تاک را می‌سازد
     prompt = f"""
-    Act as a Search Engine Expert.
+    Act as a Viral Content Researcher.
+    Current Year: {current_year}
     Input Keyword: "{keyword}" (Language: Persian).
     Domain: {domain}.
 
     Task:
-    1. Translate the keyword to its most popular English equivalent.
-    2. Add 1 viral modifier (like 'hack', 'review', 'trend', 'problem').
-    3. Output ONLY the final English search query string. Do NOT write anything else.
+    1. Translate the keyword to English.
+    2. Create ONE search query for the LATEST trends in {current_year}.
+    3. Use modifiers like "new {current_year}", "latest trends", "viral hacks".
     
-    Example Input: کرم ضد آفتاب
-    Example Output: best sunscreen 2025 review
+    Example Input: کفش (Fashion)
+    Example Output: best sneaker trends {current_year}
+
+    Output ONLY the English query string. No explanations.
     """
     return run_openrouter_request(prompt, [], openrouter_keys, agent_name="Keyword_Translator")
 
 # ==========================================
-# 2. گروک (حذف شد - نیازی نیست)
+# 2. گروک (حذف شد)
 # ==========================================
 def agent_grok_analyze(data):
     return data
 
 # ==========================================
-# 3. تحلیلگر ترند (گزارش واقعیت)
+# 3. استراتژیست محتوا (تحلیل الگوی روز + لینک‌های کامل)
 # ==========================================
-def agent_strategist(trend_data, original_keyword):
-    # لینک‌های مستقیم برای اینکه خودت هم بتوانی چک کنی
-    encoded_kw = urllib.parse.quote(original_keyword)
-    tiktok_link = f"https://www.tiktok.com/search?q={encoded_kw}"
-    twitter_link = f"https://twitter.com/search?q={encoded_kw}&src=typed_query"
+def agent_strategist(trend_data, persian_keyword, english_query):
+    # ساخت لینک‌های تمام پلتفرم‌ها
+    encoded_en = urllib.parse.quote(english_query)
+    
+    tiktok_link = f"https://www.tiktok.com/search?q={encoded_en}"
+    twitter_link = f"https://twitter.com/search?q={encoded_en}&f=live" # فیلتر زنده
+    youtube_link = f"https://www.youtube.com/results?search_query={encoded_en}"
+    instagram_link = f"https://www.instagram.com/explore/search/keyword/?q={encoded_en}"
+    gtrends_link = f"https://trends.google.com/trends/explore?q={encoded_en}&date=now%207-d" # ترند ۷ روز اخیر
     
     prompt = f"""
-    تو یک تحلیلگر ترند خبری هستی. وظیفه تو بررسی دیتای استخراج شده از اینترنت است.
-    موضوع اصلی: "{original_keyword}"
-    دیتای خام اسکریپ شده: "{trend_data}"
+    You are a Global Trend Spotter.
+    Current Year: {current_year}
+    User's Topic: "{persian_keyword}"
+    Search Query: "{english_query}"
+    Raw Data: "{trend_data}"
 
-    وظیفه:
-    ۱. دیتای خام را بخوان. آیا مردم واقعاً دارند درباره این موضوع حرف می‌زنند؟
-    ۲. اگر بله، دقیقاً چه می‌گویند؟ (دعواست؟ چالش جدید است؟ محصول جدید است؟)
-    ۳. اگر دیتا ناقص یا خالی بود، صادقانه بگو "ترند خاصی یافت نشد" و الکی داستان نساز.
+    Mission:
+    Identify the "Winning Content Format" right now in {current_year}.
+    What are people watching TODAY regarding this topic?
 
-    خروجی را دقیقاً به این فرمت فارسی بنویس:
+    Report Structure (in Persian):
 
-    📊 وضعیت واقعی ترند: (آیا الان وایرال است؟)
+    📅 **وضعیت ترند (سال {current_year}):** (آیا الان داغ است؟)
     
-    🗣️ بحث اصلی چیه؟: (خلاصه اتفاقی که دارد می‌افتد - ۲ خط)
+    🔥 **فرمت برنده امروز:** (ویدیو باید چه شکلی باشد؟ آموزشی؟ طنز؟ ASMR؟)
 
-    🌍 سیگنال‌های دریافتی:
-    - (نکته اول از دل دیتا)
-    - (نکته دوم از دل دیتا)
+    💡 **۳ ایده برای وایرال شدن:**
+    1. 
+    2. 
+    3. 
 
-    🔗 لینک‌های رصد دستی:
-    تیک‌تاک: {tiktok_link}
-    توییتر: {twitter_link}
+    🔗 **لینک‌های رصد (فیلتر شده برای {current_year}):**
+    🔹 تیک‌تاک: {tiktok_link}
+    🔹 اینستاگرام: {instagram_link}
+    🔹 یوتیوب: {youtube_link}
+    🔹 توییتر: {twitter_link}
+    🔹 گوگل ترندز: {gtrends_link}
     """
     
-    return run_openrouter_request(prompt, [], openrouter_keys, agent_name="Trend_Analyst")
+    return run_openrouter_request(prompt, [], openrouter_keys, agent_name="Strategist")
 
 # ==========================================
-# 4. سامبانووا (فیلتر زباله‌ها)
+# 4. سامبانووا (فیلتر)
 # ==========================================
 def agent_sambanova_filter(raw_data):
     if "Error" in raw_data or len(raw_data) < 10:
         return "No Data Found"
-        
+    
     headers = {"Authorization": f"Bearer {sambanova_keys.get_next_key()}", "Content-Type": "application/json"}
-    # مدل قوی‌تر برای سامبانووا
     models = ["Meta-Llama-3.1-70B-Instruct"]
     
-    prompt = f"Extract the main topics and sentiments from this raw social media text. Ignore errors. Text: {raw_data[:2500]}"
+    prompt = f"Analyze this social media text. Extract viral points relevant to {current_year}. Text: {raw_data[:2500]}"
 
     for model in models:
         payload = {"model": model, "messages": [{"role": "user", "content": prompt}]}
