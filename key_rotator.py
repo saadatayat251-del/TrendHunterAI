@@ -6,18 +6,24 @@ load_dotenv()
 
 class KeyManager:
     def __init__(self, env_var_name):
+        self.env_var_name = env_var_name
         keys_string = os.getenv(env_var_name, "")
         keys_list = [k.strip() for k in keys_string.split(',') if k.strip()]
+        
         if not keys_list:
-            raise ValueError(f"No keys found for {env_var_name}")
-        # ایجاد یک چرخه بی‌نهایت از کلیدها
-        self.key_cycle = itertools.cycle(keys_list)
+            # به جای خاموش کردن کل سرور، یک کلید موقت می‌سازیم 
+            # تا برنامه روشن بماند و کران‌جاب ارور ندهد
+            self.key_cycle = itertools.cycle(["MISSING"])
+        else:
+            self.key_cycle = itertools.cycle(keys_list)
 
     def get_next_key(self):
-        return next(self.key_cycle)
+        key = next(self.key_cycle)
+        if key == "MISSING":
+            raise ValueError(f"❌ خطای حیاتی: کلیدهای {self.env_var_name} در بخش Environment رندر وارد نشده‌اند!")
+        return key
 
-# ساخت منیجرها برای هر هوش مصنوعی
+# ساخت منیجرها برای هر هوش مصنوعی (گروک حذف شد)
 gemini_keys = KeyManager("GEMINI_KEYS")
 openrouter_keys = KeyManager("OPENROUTER_KEYS")
 sambanova_keys = KeyManager("SAMBANOVA_KEYS")
-# گروک کاملا حذف شد
