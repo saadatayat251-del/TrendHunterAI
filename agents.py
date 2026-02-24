@@ -25,14 +25,19 @@ def run_openrouter_request(prompt, models_list, key_manager, agent_name):
             continue
     raise Exception(f"خطای مدل‌های {agent_name}:\n" + "\n".join(error_log))
 
+# ==========================================
+# 1. Keyword Expander (جایگزین جمینای با اوپن‌روتر)
+# ==========================================
 def agent_gemini_expand(domain, keyword):
-    try:
-        genai.configure(api_key=gemini_keys.get_next_key())
-        model = genai.GenerativeModel('gemini-2.5-flash') 
-        response = model.generate_content(f"حوزه: '{domain}'. کلمه: '{keyword}'. 10 کلمه مترادف و هشتگ ترند جهانی بده.")
-        return response.text
-    except Exception as e:
-        return f"خطای جمینای: {str(e)}"
+    models = [
+        "google/gemini-2.0-flash-exp:free",      # جمینای از طریق اوپن‌روتر
+        "meta-llama/llama-3.3-70b-instruct:free", # بکاپ اول
+        "mistralai/mistral-small-24b-instruct-2501:free" # بکاپ دوم
+    ]
+    
+    prompt = f"من در حوزه '{domain}' کار میکنم. کلمه کلیدی من '{keyword}' است. 10 کلمه کلیدی مترادف انگلیسی و 10 هشتگ ترند جهانی برای تیک تاک و توییتر بده (فقط خروجی را با فرمت JSON بده و هیچ توضیح اضافه‌ای ننویس)."
+    
+    return run_openrouter_request(prompt, models, openrouter_keys, agent_name="Keyword_Expander")
 
 def agent_grok_analyze(data):
     models = ["moonshotai/moonshot-v1-8k", "meta-llama/llama-3.3-70b-instruct"]
@@ -57,4 +62,5 @@ def agent_sambanova_filter(raw_data):
         except Exception:
             continue
     return "خطا: تمام مدل‌های سامبانووا پاسخ ندادند."
+
 
