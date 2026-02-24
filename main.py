@@ -29,14 +29,8 @@ def run_multi_agent_pipeline(domain: str, keyword: str):
         clean_data = agent_sambanova_filter(raw_data)
         if "❌" in clean_data or "خطا" in clean_data: raise Exception(f"فیلتر سامبانووا متوقف شد: {clean_data}")
         
-        # مرحله ۴
-        grok_analysis = agent_grok_analyze(clean_data)
-        if "❌" in grok_analysis or "خطا" in grok_analysis: raise Exception(f"تحلیل گروک متوقف شد: {grok_analysis}")
-        
-        # مرحله ۵
-        final_prompt = f"Cleaned Data: {clean_data}\n\nGrok Viral Analysis: {grok_analysis}\n\nTranslate and analyze for Persian audience."
-        final_report = agent_strategist(final_prompt)
-        if "❌" in final_report or "خطا" in final_report: raise Exception(f"استراتژیست متوقف شد: {final_report}")
+        # مرحله ۴ و ۵ (اصلاح شده)
+        final_report = agent_strategist(clean_data, keyword)
         
         # مرحله ۶
         message = f"🔥 <b>گزارش نهایی ترند: {keyword}</b> 🔥\n\n{final_report}"
@@ -62,3 +56,4 @@ def ping():
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
+
