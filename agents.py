@@ -12,8 +12,11 @@ def run_openrouter_request(prompt, models_list, key_manager, agent_name):
         "Content-Type": "application/json"
     }
     
-    for model in models_list:
-        payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.3} # دمای پایین برای جلوگیری از چرت‌وپرت گویی
+    # مدل‌های قدرتمند و رایگان
+    safe_models = ["google/gemini-2.0-flash-lite-preview-02-05:free", "meta-llama/llama-3.3-70b-instruct:free", "openrouter/free"]
+    
+    for model in safe_models:
+        payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.3}
         try:
             response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=45)
             if response.status_code == 200:
@@ -22,75 +25,89 @@ def run_openrouter_request(prompt, models_list, key_manager, agent_name):
                     return data['choices'][0]['message']['content']
         except Exception:
             continue
-    raise Exception(f"خطای مدل‌های {agent_name}: هیچ پاسخی دریافت نشد.")
+    return "Error: No Response"
 
 # ==========================================
-# 1. Keyword Expander
+# 1. مترجم و سازنده کوئری (هوش اصلی سیستم)
 # ==========================================
 def agent_gemini_expand(domain, keyword):
-    # استفاده از مدل‌های باهوش‌تر برای جلوگیری از گیج شدن
-    models = ["meta-llama/llama-3.3-70b-instruct:free", "google/gemini-2.0-flash-lite-preview-02-05:free", "openrouter/free"]
+    # این تابع کلمه فارسی شما را می‌گیرد و بهترین عبارت انگلیسی برای سرچ در تیک‌تاک را می‌سازد
+    prompt = f"""
+    Act as a Search Engine Expert.
+    Input Keyword: "{keyword}" (Language: Persian).
+    Domain: {domain}.
+
+    Task:
+    1. Translate the keyword to its most popular English equivalent.
+    2. Add 1 viral modifier (like 'hack', 'review', 'trend', 'problem').
+    3. Output ONLY the final English search query string. Do NOT write anything else.
     
-    prompt = f"تو یک مترجم و متخصص سئو هستی. فقط و فقط 3 کلمه کلیدی مترادف یا مرتبط به انگلیسی برای عبارت '{keyword}' (در حوزه {domain}) تولید کن. کلمات را با کاما جدا کن. هیچ کلمه اضافه، سلام یا توضیحی ننویس!"
-    
-    return run_openrouter_request(prompt, models, openrouter_keys, agent_name="Keyword_Expander")
+    Example Input: کرم ضد آفتاب
+    Example Output: best sunscreen 2025 review
+    """
+    return run_openrouter_request(prompt, [], openrouter_keys, agent_name="Keyword_Translator")
 
 # ==========================================
-# 2. Grok Analyzer (حذف شد و ادغام شد در استراتژیست)
+# 2. گروک (حذف شد - نیازی نیست)
 # ==========================================
 def agent_grok_analyze(data):
-    # برای جلوگیری از حرف‌های اضافه، این مرحله را ساده کردیم
     return data
 
 # ==========================================
-# 3. Strategist Agent (مغز اصلی با دستورات به شدت سخت‌گیرانه)
+# 3. تحلیلگر ترند (گزارش واقعیت)
 # ==========================================
 def agent_strategist(trend_data, original_keyword):
-    models = ["meta-llama/llama-3.3-70b-instruct:free", "google/gemini-2.0-flash-lite-preview-02-05:free", "openrouter/free"]
-    
-    # ساخت لینک‌های جستجوی مستقیم برای کاربر
+    # لینک‌های مستقیم برای اینکه خودت هم بتوانی چک کنی
     encoded_kw = urllib.parse.quote(original_keyword)
     tiktok_link = f"https://www.tiktok.com/search?q={encoded_kw}"
     twitter_link = f"https://twitter.com/search?q={encoded_kw}&src=typed_query"
     
     prompt = f"""
-    تو یک استراتژیست شبکه‌های اجتماعی ایرانی هستی. وظیفه تو تحلیل این دیتای خام است: "{trend_data}"
-    موضوع اصلی سرچ شده این است: "{original_keyword}"
+    تو یک تحلیلگر ترند خبری هستی. وظیفه تو بررسی دیتای استخراج شده از اینترنت است.
+    موضوع اصلی: "{original_keyword}"
+    دیتای خام اسکریپ شده: "{trend_data}"
 
-    قوانین به شدت مهم (اگر رعایت نکنی جریمه می‌شوی):
-    ۱. اگر دیتای خام شامل جملاتی مثل "آماده پاسخگویی هستم"، "error"، یا دیتای بی‌معنی بود، اصلاً تحلیل نکن! فقط بنویس: "❌ دیتای وایرال خاصی برای این کلمه در شبکه‌های جهانی یافت نشد."
-    ۲. به هیچ وجه داستان‌سرایی نکن و کلمات قلمبه سلمبه به کار نبر.
-    ۳. دقیقاً در فرمت زیر پاسخ بده:
+    وظیفه:
+    ۱. دیتای خام را بخوان. آیا مردم واقعاً دارند درباره این موضوع حرف می‌زنند؟
+    ۲. اگر بله، دقیقاً چه می‌گویند؟ (دعواست؟ چالش جدید است؟ محصول جدید است؟)
+    ۳. اگر دیتا ناقص یا خالی بود، صادقانه بگو "ترند خاصی یافت نشد" و الکی داستان نساز.
 
-    وضعیت ترند: (آیا در توییتر/تیک‌تاک ترند است یا نه؟ در یک خط)
+    خروجی را دقیقاً به این فرمت فارسی بنویس:
+
+    📊 وضعیت واقعی ترند: (آیا الان وایرال است؟)
     
-    ۳ ایده ساده و عملی برای ویدیو/محتوا:
-    ۱. (ایده اول)
-    ۲. (ایده دوم)
-    ۳. (ایده سوم)
+    🗣️ بحث اصلی چیه؟: (خلاصه اتفاقی که دارد می‌افتد - ۲ خط)
 
-    🔗 لینک‌های رصد مستقیم شما:
+    🌍 سیگنال‌های دریافتی:
+    - (نکته اول از دل دیتا)
+    - (نکته دوم از دل دیتا)
+
+    🔗 لینک‌های رصد دستی:
     تیک‌تاک: {tiktok_link}
-    توییتر(X): {twitter_link}
+    توییتر: {twitter_link}
     """
     
-    return run_openrouter_request(prompt, models, openrouter_keys, agent_name="Strategist")
+    return run_openrouter_request(prompt, [], openrouter_keys, agent_name="Trend_Analyst")
 
 # ==========================================
-# 4. SambaNova Agent (فیلتر دیتا)
+# 4. سامبانووا (فیلتر زباله‌ها)
 # ==========================================
 def agent_sambanova_filter(raw_data):
+    if "Error" in raw_data or len(raw_data) < 10:
+        return "No Data Found"
+        
     headers = {"Authorization": f"Bearer {sambanova_keys.get_next_key()}", "Content-Type": "application/json"}
-    models = ["Meta-Llama-3.1-70B-Instruct", "Meta-Llama-3.1-8B-Instruct"]
+    # مدل قوی‌تر برای سامبانووا
+    models = ["Meta-Llama-3.1-70B-Instruct"]
     
-    prompt = f"این متن خام از اینترنت است: '{raw_data}'. اگر متن شامل ارور، یا جملات هوش مصنوعی مثل 'من یک هوش مصنوعی هستم' است، فقط کلمه 'EMPTY' را برگردان. در غیر این صورت، فقط 3 نکته مهم آن را به فارسی خلاصه کن."
+    prompt = f"Extract the main topics and sentiments from this raw social media text. Ignore errors. Text: {raw_data[:2500]}"
 
     for model in models:
-        payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}
+        payload = {"model": model, "messages": [{"role": "user", "content": prompt}]}
         try:
             response = requests.post("https://api.sambanova.ai/v1/chat/completions", headers=headers, json=payload, timeout=30)
             if response.status_code == 200:
                 return response.json()['choices'][0]['message']['content']
         except Exception:
             continue
-    return "EMPTY"
+    return "No Data Scraped"
