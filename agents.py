@@ -53,7 +53,7 @@ def agent_gemini_expand(domain, keyword):
         api_key = gemini_keys.get_next_key()
         genai.configure(api_key=api_key)
         # اصلاح مدل به نسخه پایدارتر تا خطا ندهد
-        model = genai.GenerativeModel('gemini-2.0-flash') 
+        model = genai.GenerativeModel('gemini-2.5-flash') 
         prompt = f"من در حوزه '{domain}' کار میکنم. کلمه کلیدی من '{keyword}' است. 10 کلمه کلیدی مترادف انگلیسی و 10 هشتگ ترند جهانی برای تیک تاک و توییتر بده (فرمت JSON)."
         response = model.generate_content(prompt)
         return response.text
@@ -116,3 +116,4 @@ def agent_sambanova_filter(raw_data):
             continue
             
     return "خطا: تمام مدل‌های سامبانووا پاسخ ندادند."
+
