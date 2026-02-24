@@ -11,8 +11,6 @@ class KeyManager:
         keys_list = [k.strip() for k in keys_string.split(',') if k.strip()]
         
         if not keys_list:
-            # به جای خاموش کردن کل سرور، یک کلید موقت می‌سازیم 
-            # تا برنامه روشن بماند و کران‌جاب ارور ندهد
             self.key_cycle = itertools.cycle(["MISSING"])
         else:
             self.key_cycle = itertools.cycle(keys_list)
@@ -20,10 +18,9 @@ class KeyManager:
     def get_next_key(self):
         key = next(self.key_cycle)
         if key == "MISSING":
-            raise ValueError(f"❌ خطای حیاتی: کلیدهای {self.env_var_name} در بخش Environment رندر وارد نشده‌اند!")
+            raise ValueError(f"❌ کلیدهای {self.env_var_name} در بخش Environment رندر وارد نشده‌اند!")
         return key
 
-# ساخت منیجرها برای هر هوش مصنوعی (گروک حذف شد)
 gemini_keys = KeyManager("GEMINI_KEYS")
 openrouter_keys = KeyManager("OPENROUTER_KEYS")
 sambanova_keys = KeyManager("SAMBANOVA_KEYS")
