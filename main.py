@@ -14,30 +14,32 @@ class TrendRequest(BaseModel):
     row_index: int
 
 def run_multi_agent_pipeline(domain: str, keyword: str):
-    send_telegram_message(f"🔍 <b>شکارچی بیدار شد!</b>\n🎯 هدف: {keyword}\n📂 حوزه: {domain}\n⏳ در حال تحلیل شبکه‌های جهانی...")
+    send_telegram_message(f"🔍 <b>شکارچی بیدار شد!</b>\n🎯 هدف: {keyword}\n⏳ در حال ترجمه و اسکن جهانی...")
     
     try:
-        # مرحله ۱
-        expanded_kws = agent_gemini_expand(domain, keyword)
-        if "❌" in expanded_kws or "خطا" in expanded_kws: raise Exception(f"گسترش کلمات متوقف شد: {expanded_kws}")
+        # مرحله ۱: تبدیل کلمه فارسی به بهترین کوئری انگلیسی (مثلا: 'کفش' -> 'sneaker trends 2025')
+        english_query = agent_gemini_expand(domain, keyword)
+        # پاکسازی کوئری از کاراکترهای اضافه احتمالی
+        english_query = english_query.replace('"', '').strip()
         
-        # مرحله ۲
-        raw_data = scrape_social_media(expanded_kws)
-        if "Error" in raw_data or "خطا" in raw_data: raise Exception(f"سپر هاگینگ‌فیس دیتایی پیدا نکرد: {raw_data}")
+        # مرحله ۲: جستجو در اینترنت با کلمه انگلیسی
+        raw_data = scrape_social_media(english_query)
+        if "Error" in raw_data or "خطا" in raw_data: 
+            # اگر دیتا نبود، باز هم ادامه میدیم تا هوش مصنوعی با دانش خودش پیشنهاد بده
+            raw_data = "No live data found, use general knowledge."
         
-        # مرحله ۳
+        # مرحله ۳: تمیز کردن دیتا
         clean_data = agent_sambanova_filter(raw_data)
-        if "❌" in clean_data or "خطا" in clean_data: raise Exception(f"فیلتر سامبانووا متوقف شد: {clean_data}")
         
-        # مرحله ۴ و ۵ (اصلاح شده)
-        final_report = agent_strategist(clean_data, keyword)
+        # مرحله ۴: تحلیل نهایی (ارسال هم کلمه فارسی و هم کوئری انگلیسی برای لینک‌سازی)
+        final_report = agent_strategist(clean_data, keyword, english_query)
         
-        # مرحله ۶
-        message = f"🔥 <b>گزارش نهایی ترند: {keyword}</b> 🔥\n\n{final_report}"
+        # مرحله ۵: ارسال گزارش
+        message = f"🔥 <b>گزارش ترند جهانی: {keyword}</b> 🔥\n(Search Query: {english_query})\n\n{final_report}"
         send_telegram_message(message)
         
     except Exception as e:
-        send_telegram_message(f"⚠️ <b>عملیات متوقف شد!</b>\n\n{str(e)}")
+        send_telegram_message(f"⚠️ <b>خطا در سیستم:</b>\n{str(e)}")
 
 # این مسیر کلمات را از گوگل شیت (یا شما) می‌گیرد و شکار را شروع می‌کند
 @app.post("/api/start-hunt")
@@ -56,4 +58,5 @@ def ping():
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
+
 
