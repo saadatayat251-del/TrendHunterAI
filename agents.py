@@ -1,14 +1,13 @@
 import requests
 import json
 import time
-from key_rotator import openrouter_keys, gemini_keys, sambanova_keys, grok_keys
+from key_rotator import openrouter_keys, gemini_keys, sambanova_keys
 import google.generativeai as genai
 
 # ==========================================
-# تابع ارسال درخواست به OpenRouter (با سیستم گزارش خطای دقیق)
+# تابع ارسال درخواست به OpenRouter
 # ==========================================
 def run_openrouter_request(prompt, models_list, key_manager, agent_name):
-    # گرفتن کلید
     api_key = key_manager.get_next_key()
     
     headers = {
@@ -18,7 +17,7 @@ def run_openrouter_request(prompt, models_list, key_manager, agent_name):
         "X-Title": "TrendHunter"
     }
     
-    error_log = [] # ذخیره خطاها برای نمایش به شما
+    error_log = []
     
     for model in models_list:
         payload = {
@@ -35,7 +34,6 @@ def run_openrouter_request(prompt, models_list, key_manager, agent_name):
                 if 'choices' in data and len(data['choices']) > 0:
                     return data['choices'][0]['message']['content']
             else:
-                # خطای دقیق را ذخیره می‌کنیم
                 error_msg = f"Model {model} -> Status: {response.status_code}, Error: {response.text[:200]}"
                 print(f"❌ {error_msg}")
                 error_log.append(error_msg)
@@ -44,20 +42,18 @@ def run_openrouter_request(prompt, models_list, key_manager, agent_name):
             error_log.append(f"Model {model} -> Connection Error: {str(e)}")
             continue
     
-    # اگر به اینجا رسیدیم یعنی همه مدل‌ها شکست خوردند
-    # تمام خطاها را برمی‌گردانیم تا در تلگرام ببینید مشکل کجاست
     errors_string = "\n".join(error_log)
     raise Exception(f"خطای مدل‌های {agent_name}:\n{errors_string}")
 
 # ==========================================
-# 1. Gemini (اصلاح نام مدل برای جلوگیری از خطا)
+# 1. Gemini
 # ==========================================
 def agent_gemini_expand(domain, keyword):
     try:
         api_key = gemini_keys.get_next_key()
         genai.configure(api_key=api_key)
-        # مدل 2.5 هنوز API عمومی ندارد، ما از قوی‌ترین مدل موجود (2.0 Flash Exp) استفاده می‌کنیم
-        model = genai.GenerativeModel('gemini-2.5-flash') 
+        # اصلاح مدل به نسخه پایدارتر تا خطا ندهد
+        model = genai.GenerativeModel('gemini-2.0-flash') 
         prompt = f"من در حوزه '{domain}' کار میکنم. کلمه کلیدی من '{keyword}' است. 10 کلمه کلیدی مترادف انگلیسی و 10 هشتگ ترند جهانی برای تیک تاک و توییتر بده (فرمت JSON)."
         response = model.generate_content(prompt)
         return response.text
@@ -65,7 +61,7 @@ def agent_gemini_expand(domain, keyword):
         return f"خطای جمینای: {str(e)}"
 
 # ==========================================
-# 3. Grok Agent (با اصلاح نام مدل‌ها برای OpenRouter)
+# 2. Grok Agent (اجرا شده توسط OpenRouter)
 # ==========================================
 def agent_grok_analyze(data):
     models = [
@@ -76,17 +72,16 @@ def agent_grok_analyze(data):
     
     prompt = f"تو متخصص شبکه های اجتماعی هستی. این دیتای خام را بررسی کن و بگو آیا این موضوع در توییتر و تیک تاک در حال وایرال شدن است یا نه؟ دیتا: {data}"
     
-    # ❌ خطای قبلی اینجا بود: grok_keys
-    # ✅ کد صحیح: openrouter_keys
+    # حالا از openrouter_keys استفاده می‌کند
     return run_openrouter_request(prompt, models, openrouter_keys, agent_name="Grok_via_OpenRouter")
 
 # ==========================================
-# 4. Strategist Agent (مدل‌های درخواستی شما)
+# 3. Strategist Agent
 # ==========================================
 def agent_strategist(trend_data):
     models = [
-        "deepseek/deepseek-r1:free",           # جایگزین chimera (چون chimera گاهی در دسترس نیست)
-        "nvidia/nemotron-3-8b-chat:free",      # نسخه پایدار نموترون
+        "deepseek/deepseek-r1:free",
+        "nvidia/nemotron-3-8b-chat:free",
         "mistralai/mistral-small-24b-instruct-2501:free",
         "meta-llama/llama-3.3-70b-instruct:free",
         "deepseek/deepseek-chat"
@@ -96,7 +91,7 @@ def agent_strategist(trend_data):
     return run_openrouter_request(prompt, models, openrouter_keys, agent_name="Strategist")
 
 # ==========================================
-# 5. SambaNova Agent (مدل‌های درخواستی شما)
+# 4. SambaNova Agent
 # ==========================================
 def agent_sambanova_filter(raw_data):
     api_key = sambanova_keys.get_next_key()
@@ -121,4 +116,3 @@ def agent_sambanova_filter(raw_data):
             continue
             
     return "خطا: تمام مدل‌های سامبانووا پاسخ ندادند."
-
