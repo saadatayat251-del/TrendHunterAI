@@ -28,7 +28,7 @@ def run_openrouter_request(prompt, models_list, key_manager, agent_name):
 def agent_gemini_expand(domain, keyword):
     try:
         genai.configure(api_key=gemini_keys.get_next_key())
-        model = genai.GenerativeModel('gemini-2.0-flash') 
+        model = genai.GenerativeModel('gemini-2.5-flash') 
         response = model.generate_content(f"حوزه: '{domain}'. کلمه: '{keyword}'. 10 کلمه مترادف و هشتگ ترند جهانی بده.")
         return response.text
     except Exception as e:
@@ -57,3 +57,4 @@ def agent_sambanova_filter(raw_data):
         except Exception:
             continue
     return "خطا: تمام مدل‌های سامبانووا پاسخ ندادند."
+
